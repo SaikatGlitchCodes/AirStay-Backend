@@ -29,6 +29,59 @@ app.get('/', async (req, res) => {
     }
 });
 
+app.post('/create-hotel', async (req, res) => {
+    const { 
+        name, 
+        address, 
+        city, 
+        state, 
+        country, 
+        postal_code, 
+        phone_number, 
+        email, 
+        website, 
+        description, 
+        rating, 
+        total_rooms, 
+        image_url 
+    } = req.body;
+
+    try {
+        console.log(req.body);
+
+        const results = await new Promise((resolve, reject) => {
+            const query = `INSERT INTO hotel (name, address, city, state, country, postal_code, 
+                phone_number, email, website, description, rating, total_rooms, image_url) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            const values = [
+                name, 
+                address, 
+                city, 
+                state, 
+                country, 
+                postal_code, 
+                phone_number, 
+                email, 
+                website, 
+                description, 
+                rating, 
+                total_rooms, 
+                image_url
+            ];
+
+            con.query(query, values, (error, results, fields) => {
+                if (error) return reject(error);
+                resolve(results);
+            });
+        });
+
+        res.json({ message: 'Hotel created successfully' });
+    } catch (error) {
+        console.error('Error executing query:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
 
 app.get('/about',(req,res)=>{
     res.json({

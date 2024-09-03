@@ -1,10 +1,10 @@
 var mysql = require("mysql");
 
-var hostname = "7ha.h.filess.io";
-var database = "Airstay_puttingmix";
+var hostname = "27s.h.filess.io";
+var database = "airstayhotels_diagramhis";
 var port = "3307";
-var username = "Airstay_puttingmix";
-var password = "5b1f895356f58f9d9ad7f645dee69ce1e4ae1a49";
+var username = "airstayhotels_diagramhis";
+var password = "60fc7c7faf0b08f8d27f21df661ecf65b7224c23";
 
 var con = mysql.createConnection({
   host: hostname,
