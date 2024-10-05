@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
+const Request = require('./Request')
 
 const Transaction = sequelize.define('Transaction', {
   id: {
@@ -11,7 +12,11 @@ const Transaction = sequelize.define('Transaction', {
     type: DataTypes.INTEGER
   },
   request_id: {
-    type: DataTypes.INTEGER
+    type: DataTypes.INTEGER,
+    references: {
+      model: Request,
+      key: 'id' 
+    }
   },
   transaction_type: {
     type: DataTypes.ENUM('spend', 'earn'),

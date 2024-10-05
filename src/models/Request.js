@@ -1,7 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 const User = require('./User');
-const Subject = require('./Subject');
 const Address = require('./Address');
 
 const Request = sequelize.define('Request', {
@@ -10,12 +9,17 @@ const Request = sequelize.define('Request', {
     autoIncrement: true,
     primaryKey: true
   },
-  student_id: {
+  email: {
     type: DataTypes.STRING,
+    allowNull: false,
     references: {
       model: User,
-      key: 'user_id'
+      key: 'email'
     }
+  },
+  phone_number: {
+    type: DataTypes.STRING,
+    allowNull: false,
   },
   type: {
     type: DataTypes.ENUM('tutoring', 'job support', 'assignment'),
@@ -25,25 +29,57 @@ const Request = sequelize.define('Request', {
     type: DataTypes.ENUM('active', 'inactive'),
     defaultValue: 'active'
   },
-  level: DataTypes.STRING,
-  tutors_want: DataTypes.INTEGER,
-  gender_preference: DataTypes.STRING,
-  description: DataTypes.TEXT,
-  nature: DataTypes.STRING,
-  createdAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
+  level: {
+    type: DataTypes.STRING,
+    allowNull: true
   },
-  updatedAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
+  tutors_want: {
+    type: DataTypes.STRING,
+    allowNull: true
   },
-  subject_id: {
-    type: DataTypes.INTEGER,
-    references: {
-      model: Subject,
-      key: 'id'
-    }
+  gender_preference: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  nature: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  meeting_options: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  get_tutors_from: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  price_amount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true
+  },
+  price_currency_symbol: {
+    type: DataTypes.STRING(5),
+    allowNull: true
+  },
+  price_currency: {
+    type: DataTypes.STRING(3),
+    allowNull: true
+  },
+  price_option: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  upload_file: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  i_need_someone: {
+    type: DataTypes.TEXT,
+    allowNull: true
   },
   address_id: {
     type: DataTypes.INTEGER,
@@ -53,27 +89,8 @@ const Request = sequelize.define('Request', {
     }
   }
 }, {
-  tableName: 'request'
+  tableName: 'request',
+  timestamps: true // Sequelize will auto-handle createdAt and updatedAt
 });
 
 module.exports = Request;
-
-
-/*
-address
-description
-subject
-level
-type
-meeting_options
-status
-tutors_want
-gender_preference
-get_tutors_from
-price_amount
-price_currency_symbol
-price_currency
-price_option
-upload_file
-i_need_someone
-*/

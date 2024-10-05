@@ -10,7 +10,8 @@ const Subject = sequelize.define('Subject', {
   },
   name: {
     type: DataTypes.STRING,
-    allowNull: false
+    allowNull: false,
+    unique: true,
   },
   description: {
     type: DataTypes.TEXT
@@ -20,8 +21,6 @@ const Subject = sequelize.define('Subject', {
   },
   slug: {
     type: DataTypes.STRING,
-    unique: true,
-    allowNull: false
   },
   createdAt: {
     type: DataTypes.DATE,

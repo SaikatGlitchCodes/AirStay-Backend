@@ -6,24 +6,37 @@ const Request = require('./Request');
 const RequestSubjectRel = require('./request_subject_rel');
 const UserSubjectRel = require('./user_subject_rel');
 const Transaction = require('./transaction');
+const sequelize = require('../config/db');
 
-// Define associations
+// User Relationships
 User.belongsTo(Address, { foreignKey: 'address_id', as: 'address' });
-User.belongsTo(Subject, { foreignKey: 'subject_id' });
 User.belongsToMany(Subject, { through: UserSubjectRel, foreignKey: 'user_id', as: 'subjects' });
 
+// Address Relationships
 Address.hasMany(User, { foreignKey: 'address_id', as: 'users' });
 Address.hasMany(Request, { foreignKey: 'address_id' });
 
-Subject.hasMany(Request, { foreignKey: 'subject_id' });
+// Subject Relationships
 Subject.belongsToMany(User, { through: UserSubjectRel, foreignKey: 'subject_id', as: 'users' });
-Subject.belongsToMany(Request, { through: RequestSubjectRel, foreignKey: 'subject_id' });
+Subject.belongsToMany(Request, {
+  through: 'request_subject_rel',
+  foreignKey: 'subject_id', // This should match
+  otherKey: 'request_id',    // This should also match
+  as: 'requests'
+});
 
-Request.belongsTo(User, { foreignKey: 'student_id' });
-Request.belongsTo(Address, { foreignKey: 'address_id' });
-Request.belongsTo(Subject, { foreignKey: 'subject_id' });
-Request.hasMany(Transaction, { foreignKey: 'request_id' });
+// Request Relationships
+Request.belongsTo(User, { foreignKey: 'email', targetKey: 'email' }); // Link the email field
+Request.belongsTo(Address, { foreignKey: 'address_id', as: 'address' });
+Request.hasMany(Transaction, { foreignKey: 'id', sourceKey: 'id' });
+Request.belongsToMany(Subject, {
+  through: 'request_subject_rel',
+  foreignKey: 'request_id', // This should match the column name in the junction table
+  otherKey: 'subject_id',    // This should also match
+  as: 'subjects'
+});
 
+// Transaction Relationships
 Transaction.belongsTo(User, { foreignKey: 'user_id' });
 Transaction.belongsTo(Request, { foreignKey: 'request_id' });
 
@@ -35,4 +48,5 @@ module.exports = {
   RequestSubjectRel,
   UserSubjectRel,
   Transaction,
+  sequelize
 };

@@ -9,18 +9,20 @@ const RequestSubjectRel = sequelize.define('RequestSubjectRel', {
     references: {
       model: Request,
       key: 'id'
-    }
+    },
+    primaryKey: true
   },
   subject_id: {
     type: DataTypes.INTEGER,
     references: {
       model: Subject,
       key: 'id'
-    }
+    },
+    primaryKey: true
   }
 }, {
   tableName: 'request_subject_rel',
-  timestamps: false
+  timestamps: true // Disable createdAt and updatedAt for join table
 });
 
 module.exports = RequestSubjectRel;

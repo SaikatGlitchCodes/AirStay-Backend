@@ -3,7 +3,7 @@ const router = express.Router();
 const { User, UserSubjectRel, Subject, Address } = require('../models');
 
 router.put('/:email', async (req, res) => {
-  const emailId = parseInt(req.params.email, 10);
+  console.log('[Updating User]', req.params.email);
   const {
     phone_number,
     gender,
@@ -19,10 +19,10 @@ router.put('/:email', async (req, res) => {
   } = req.body;
 
   try {
-    // Find the user by Email and include current subjects
+    // Find the user by Email and include current subjects using alias 'subjects'
     const user = await User.findOne({
-      where: {email: emailId},
-      include: [Subject] // Load associated subjects
+      where: { email: req.params.email },
+      include: [{ model: Subject, as: 'subjects' }] // Use alias 'subjects'
     });
 
     if (!user) {
@@ -53,7 +53,7 @@ router.put('/:email', async (req, res) => {
           await existingAddress.update(address);
         }
       } else {
-        // Create a new address if user didn't have one
+        // Create a new address if the user didn't have one
         const newAddress = await Address.create(address);
         user.address_id = newAddress.id;
         await user.save();
@@ -62,8 +62,8 @@ router.put('/:email', async (req, res) => {
 
     // Update subjects if provided
     if (subject_ids && subject_ids.length > 0) {
-      // Get the current subjects associated with the user
-      const currentSubjectIds = user.Subjects.map(subject => subject.id);
+      // Ensure user.Subjects is defined
+      const currentSubjectIds = user.subjects ? user.subjects.map(subject => subject.id) : [];
 
       // Find subjects to add
       const subjectsToAdd = subject_ids.filter(id => !currentSubjectIds.includes(id));
@@ -81,6 +81,7 @@ router.put('/:email', async (req, res) => {
         await user.addSubjects(subjectsToAdd);
       }
     }
+
     res.status(200).json(user);
   } catch (error) {
     console.error('Error updating user:', error);
@@ -96,7 +97,7 @@ router.post('/', async (req, res) => {
     phone_number,
     gender,
     email,
-    address, // Assuming this is an object containing address details
+    address,
     bio,
     years_of_experience,
     rating,
@@ -106,6 +107,12 @@ router.post('/', async (req, res) => {
     status
   } = req.body;
   try {
+    // Check if the user with the provided email already exists
+    const existingUser = await User.findOne({ where: { email } });
+
+    if (existingUser) {
+      return res.status(200).json({ error: 'User already exists', existingUser: true }); // Conflict error if user already exists
+    }
     let address_id = null;
     // Check if address data is provided and create the address if it is
     if (address) {
@@ -124,10 +131,10 @@ router.post('/', async (req, res) => {
         city: address.city,
         street: address.street
       });
-      address_id = createdAddress.id;
+      address_id = createdAddress.id; 
     }
 
-    // Create the user with the address ID
+    // Create the user with the address ID 
     const user = await User.create({
       user_id,
       name,
@@ -151,7 +158,7 @@ router.post('/', async (req, res) => {
       }));
     }
 
-    res.status(201).json(user);
+    res.status(201).json({user, existingUser: false});
   } catch (error) {
     console.error('Error adding user:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -160,25 +167,30 @@ router.post('/', async (req, res) => {
 
 router.get('/:email?', async (req, res) => {
   try {
+    const { email } = req.params;
+
+    // Fetch the user with the provided email, or all users if email is not provided
     const user = await User.findAll({
-      where: req.params.email ? { email: req.params.email } : {},
+      where: email ? { email: email } : {},
       include: [
-        { 
-          model: Subject, 
+        {
+          model: Subject,
           as: 'subjects', // Alias for the many-to-many relation
           through: { model: UserSubjectRel } // Specify the through table
         },
-        { 
-          model: Address, 
+        {
+          model: Address,
           as: 'address' // Alias for the address association
         }
       ]
     });
 
+    // Check if user data is found
     if (!user || user.length === 0) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ error: 'User not found' }); // Return custom error message
     }
 
+    // Return the user data
     res.status(200).json(user);
   } catch (err) {
     console.error('Error fetching user:', err);
@@ -192,7 +204,7 @@ router.delete('/:email', async (req, res) => {
   try {
     // Find the user by Email
     const user = await User.findOne({
-      where:{ email:email },
+      where: { email: email },
       include: [{ model: Subject, as: 'subjects' }] // Include subjects if needed for any cleanup
     });
 
