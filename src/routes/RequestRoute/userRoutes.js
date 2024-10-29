@@ -1,39 +1,52 @@
 const express = require('express');
 const router = express.Router();
-const { User, UserSubjectRel, Subject, Address } = require('../models');
+const { User, UserSubjectRel, Subject, Address } = require('../../models');
 
 router.put('/:email', async (req, res) => {
-  console.log('[Updating User]', req.params.email);
+  console.log('[Updating/Creating User]', req.params.email);
   const {
+    name, // Added name field for user creation
     phone_number,
     gender,
-    address, // Address object to update
+    address,
+    role,
     bio,
     years_of_experience,
     rating,
     profile_img,
     hobbies,
-    subject_ids, // Array of subject IDs for the update
+    subject_ids,
     coin_balance,
     status
   } = req.body;
 
   try {
-    // Find the user by Email and include current subjects using alias 'subjects'
-    const user = await User.findOne({
+    // Find or create the user
+    let [user, created] = await User.findOrCreate({
       where: { email: req.params.email },
-      include: [{ model: Subject, as: 'subjects' }] // Use alias 'subjects'
+      defaults: {
+        name: name || '', // Use empty string if name is not provided
+        phone_number: phone_number || null,
+        gender: gender || null,
+        bio: bio || null,
+        role: role || 'user',
+        years_of_experience: years_of_experience || null,
+        rating: rating || null,
+        profile_img: profile_img || null,
+        hobbies: hobbies || [],
+        coin_balance: coin_balance || 0,
+        status: status || 'active'
+      },
+      include: [{ model: Subject, as: 'subjects' }]
     });
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Prepare object to update user fields (except email and name)
+    // Prepare object to update user fields
     const updateFields = {};
+    if (name !== undefined) updateFields.name = name;
     if (phone_number !== undefined) updateFields.phone_number = phone_number;
     if (gender !== undefined) updateFields.gender = gender;
     if (bio !== undefined) updateFields.bio = bio;
+    if (role !== undefined) updateFields.role = role;
     if (years_of_experience !== undefined) updateFields.years_of_experience = years_of_experience;
     if (rating !== undefined) updateFields.rating = rating;
     if (profile_img !== undefined) updateFields.profile_img = profile_img;
@@ -41,34 +54,32 @@ router.put('/:email', async (req, res) => {
     if (coin_balance !== undefined) updateFields.coin_balance = coin_balance;
     if (status !== undefined) updateFields.status = status;
 
-    // Update the user's fields
-    await user.update(updateFields);
+    // Update the user's fields if there are any changes
+    if (Object.keys(updateFields).length > 0) {
+      await user.update(updateFields);
+    }
 
-    // If an address is provided, update or create it
+    // Handle address
     if (address) {
       if (user.address_id) {
-        // Update the existing address
+        // Update existing address
         const existingAddress = await Address.findByPk(user.address_id);
         if (existingAddress) {
           await existingAddress.update(address);
         }
       } else {
-        // Create a new address if the user didn't have one
+        // Create new address
         const newAddress = await Address.create(address);
-        user.address_id = newAddress.id;
-        await user.save();
+        await user.update({ address_id: newAddress.id });
       }
     }
 
-    // Update subjects if provided
+    // Handle subjects
     if (subject_ids && subject_ids.length > 0) {
-      // Ensure user.Subjects is defined
       const currentSubjectIds = user.subjects ? user.subjects.map(subject => subject.id) : [];
 
-      // Find subjects to add
+      // Find subjects to add and remove
       const subjectsToAdd = subject_ids.filter(id => !currentSubjectIds.includes(id));
-
-      // Find subjects to remove
       const subjectsToRemove = currentSubjectIds.filter(id => !subject_ids.includes(id));
 
       // Remove old subjects
@@ -82,10 +93,23 @@ router.put('/:email', async (req, res) => {
       }
     }
 
-    res.status(200).json(user);
+    // Fetch updated user with all associations
+    const updatedUser = await User.findOne({
+      where: { email: req.params.email },
+      include: [
+        { model: Subject, as: 'subjects' },
+        { model: Address, as: 'address' }
+      ]
+    });
+
+    res.status(created ? 201 : 200).json({
+      message: created ? 'User created and updated successfully' : 'User updated successfully',
+      user: updatedUser
+    });
+
   } catch (error) {
-    console.error('Error updating user:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('Error updating/creating user:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
@@ -131,7 +155,7 @@ router.post('/', async (req, res) => {
         city: address.city,
         street: address.street
       });
-      address_id = createdAddress.id; 
+      address_id = createdAddress.id;
     }
 
     // Create the user with the address ID 
@@ -158,7 +182,7 @@ router.post('/', async (req, res) => {
       }));
     }
 
-    res.status(201).json({user, existingUser: false});
+    res.status(201).json({ user, existingUser: false });
   } catch (error) {
     console.error('Error adding user:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -187,7 +211,7 @@ router.get('/:email?', async (req, res) => {
 
     // Check if user data is found
     if (!user || user.length === 0) {
-      return res.status(404).json({ error: 'User not found' }); // Return custom error message
+      return res.status(500).json({ error: 'User not found' }); // Return custom error message
     }
 
     // Return the user data

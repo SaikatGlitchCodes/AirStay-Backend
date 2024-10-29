@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Subject } = require('../models'); // Assuming Subject model is defined in the models folder
+const { Subject } = require('../../models'); // Assuming Subject model is defined in the models folder
 
 // GET route to fetch all subjects
 router.get('/', async (req, res) => {

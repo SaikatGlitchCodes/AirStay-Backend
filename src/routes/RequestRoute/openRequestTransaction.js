@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
-const { Transaction, User } = require('../models');
-const coinCostBalance = require('../util/coinBalance');
+const { Transaction, User } = require('../../models');
+const coinCostBalance = require('../../util/coinBalance');
 
 router.post('/:requestId', async (req, res) => {
     const userId = req.body.user_id;
