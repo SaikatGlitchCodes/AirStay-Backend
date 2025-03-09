@@ -1,26 +1,38 @@
-const { Sequelize } = require('sequelize');
-require('dotenv').config();
+const { Sequelize } = require("sequelize");
+require("dotenv").config();
 
-const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASS, {
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT,
-    dialect: 'mysql',
-    logging: false,
-    pool: {
-        max: 10, // Maximum number of connections in pool
-        min: 0,  // Minimum number of connections in pool
-        acquire: 30000, // Maximum time, in milliseconds, that pool will try to get connection before throwing error
-        idle: 10000 // Maximum time, in milliseconds, that a connection can be idle before being released
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is not defined in .env file");
+}
+
+const sequelize = new Sequelize(process.env.DATABASE_URL, {
+  dialect: "postgres",
+  dialectOptions: {
+    ssl: {
+      require: true, // Required for Neon
+      rejectUnauthorized: false,
     },
+  },
+  logging: process.env.NODE_ENV === "development", // Enable logging in dev mode
+  pool: {
+    max: 10,
+    min: 2, // Avoid cold starts
+    acquire: 30000,
+    idle: 5000, // Lower idle time for faster recycling
+  },
 });
 
-(async () => {
-    try {
-        await sequelize.authenticate();
-        console.log('Connection to the database has been established successfully.');
-    } catch (error) {
-        console.error('Unable to connect to the database:', error);
-    }
-})();
+// Function to test database connection
+const testDBConnection = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log("✅ Database connected successfully.");
+  } catch (error) {
+    console.error("❌ Unable to connect to the database:", error.message);
+    process.exit(1); // Exit process if connection fails
+  }
+};
+
+testDBConnection();
 
 module.exports = sequelize;

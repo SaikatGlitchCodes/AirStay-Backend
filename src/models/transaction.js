@@ -1,6 +1,7 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-const Request = require('./Request')
+const User = require('./User'); // Import User for FK reference
+const Request = require('./Request');
 
 const Transaction = sequelize.define('Transaction', {
   id: {
@@ -9,13 +10,19 @@ const Transaction = sequelize.define('Transaction', {
     primaryKey: true
   },
   user_id: {
-    type: DataTypes.INTEGER
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: User, // Ensure foreign key integrity
+      key: 'id'
+    }
   },
   request_id: {
     type: DataTypes.INTEGER,
+    allowNull: false,
     references: {
       model: Request,
-      key: 'id' 
+      key: 'id'
     }
   },
   transaction_type: {
@@ -27,16 +34,12 @@ const Transaction = sequelize.define('Transaction', {
     allowNull: false
   },
   payment_method: {
-    type: DataTypes.STRING(100)
-  },
-  createdAt: {
-    type: DataTypes.DATE,
-    defaultValue: DataTypes.NOW
-  },
-
+    type: DataTypes.STRING(100),
+    allowNull: true // Some transactions might not involve payments
+  }
 }, {
   tableName: 'transaction',
-  timestamps: false
+  timestamps: true // Sequelize will auto-handle createdAt & updatedAt
 });
 
 module.exports = Transaction;

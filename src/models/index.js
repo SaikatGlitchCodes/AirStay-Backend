@@ -1,4 +1,3 @@
-// src/models/index.js
 const User = require('./User');
 const Address = require('./Address');
 const Subject = require('./Subject');
@@ -14,27 +13,17 @@ User.belongsToMany(Subject, { through: UserSubjectRel, foreignKey: 'user_id', as
 
 // Address Relationships
 Address.hasMany(User, { foreignKey: 'address_id', as: 'users' });
-Address.hasMany(Request, { foreignKey: 'address_id' });
+Address.hasMany(Request, { foreignKey: 'address_id', as: 'requests' });
 
 // Subject Relationships
 Subject.belongsToMany(User, { through: UserSubjectRel, foreignKey: 'subject_id', as: 'users' });
-Subject.belongsToMany(Request, {
-  through: 'request_subject_rel',
-  foreignKey: 'subject_id', // This should match
-  otherKey: 'request_id',    // This should also match
-  as: 'requests'
-});
+Subject.belongsToMany(Request, { through: RequestSubjectRel, foreignKey: 'subject_id', otherKey: 'request_id', as: 'requests' });
 
 // Request Relationships
-Request.belongsTo(User, { foreignKey: 'email', targetKey: 'email' }); // Link the email field
+Request.belongsTo(User, { foreignKey: 'user_id' }); // Fixed foreign key reference
 Request.belongsTo(Address, { foreignKey: 'address_id', as: 'address' });
-Request.hasMany(Transaction, { foreignKey: 'id', sourceKey: 'id' });
-Request.belongsToMany(Subject, {
-  through: 'request_subject_rel',
-  foreignKey: 'request_id', // This should match the column name in the junction table
-  otherKey: 'subject_id',    // This should also match
-  as: 'subjects'
-});
+Request.hasMany(Transaction, { foreignKey: 'request_id', as: 'transactions' }); // Fixed foreign key reference
+Request.belongsToMany(Subject, { through: RequestSubjectRel, foreignKey: 'request_id', otherKey: 'subject_id', as: 'subjects' });
 
 // Transaction Relationships
 Transaction.belongsTo(User, { foreignKey: 'user_id' });

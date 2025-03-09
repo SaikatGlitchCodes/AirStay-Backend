@@ -22,7 +22,7 @@ const RequestSubjectRel = sequelize.define('RequestSubjectRel', {
   }
 }, {
   tableName: 'request_subject_rel',
-  timestamps: true // Disable createdAt and updatedAt for join table
+  timestamps: false // Disable timestamps for a pure join table
 });
 
 module.exports = RequestSubjectRel;

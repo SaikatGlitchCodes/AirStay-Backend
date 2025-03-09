@@ -7,90 +7,69 @@ const Request = sequelize.define('Request', {
   id: {
     type: DataTypes.INTEGER,
     autoIncrement: true,
-    primaryKey: true
+    primaryKey: true,
   },
-  email: {
+  user_id: {
     type: DataTypes.STRING,
     allowNull: false,
     references: {
       model: User,
-      key: 'email'
-    }
+      key: 'user_id', // Changed from 'email' to 'user_id' (better for FK)
+    },
+    onDelete: 'SET NULL',
   },
   phone_number: {
     type: DataTypes.STRING,
     allowNull: false,
   },
   type: {
-    type: DataTypes.ENUM('tutoring', 'job support', 'assignment'),
-    allowNull: false
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      isIn: [['tutoring', 'job support', 'assignment']], // ENUM Alternative
+    },
   },
   status: {
-    type: DataTypes.ENUM('active', 'inactive'),
-    defaultValue: 'active'
-  },
-  level: {
     type: DataTypes.STRING,
-    allowNull: true
+    defaultValue: 'active',
+    validate: {
+      isIn: [['active', 'inactive']], // ENUM Alternative
+    },
   },
-  tutors_want: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  gender_preference: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  description: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
-  nature: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  meeting_options: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  get_tutors_from: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
+  level: DataTypes.STRING,
+  tutors_want: DataTypes.STRING,
+  gender_preference: DataTypes.STRING,
+  description: DataTypes.TEXT,
+  nature: DataTypes.STRING,
+  meeting_options: DataTypes.STRING,
+  get_tutors_from: DataTypes.STRING,
   price_amount: {
     type: DataTypes.DECIMAL(10, 2),
-    allowNull: true
+    allowNull: true,
   },
   price_currency_symbol: {
     type: DataTypes.STRING(5),
-    allowNull: true
+    allowNull: true,
   },
   price_currency: {
     type: DataTypes.STRING(3),
-    allowNull: true
+    allowNull: true,
   },
-  price_option: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  upload_file: {
-    type: DataTypes.STRING,
-    allowNull: true
-  },
-  i_need_someone: {
-    type: DataTypes.TEXT,
-    allowNull: true
-  },
+  price_option: DataTypes.STRING,
+  upload_file: DataTypes.STRING,
+  i_need_someone: DataTypes.TEXT,
   address_id: {
     type: DataTypes.INTEGER,
     references: {
       model: Address,
-      key: 'id'
-    }
-  }
+      key: 'id',
+    },
+    onDelete: 'SET NULL',
+  },
 }, {
-  tableName: 'request',
-  timestamps: true // Sequelize will auto-handle createdAt and updatedAt
+  tableName: 'requests', // Pluralized for PostgreSQL
+  timestamps: true, // Automatically adds createdAt & updatedAt
+  underscored: true, // Converts camelCase fields to snake_case in DB
 });
 
 module.exports = Request;
