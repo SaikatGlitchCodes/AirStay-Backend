@@ -1,30 +1,23 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-const User = require('./User');
-const Subject = require('./Subject');
 
 const UserSubjectRel = sequelize.define('UserSubjectRel', {
   user_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    references: {
-      model: User,
-      key: 'id'
-    },
-    primaryKey: true // Composite primary key
+    primaryKey: true,
+    references: { model: 'users', key: 'id' }
   },
   subject_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
-    references: {
-      model: Subject,
-      key: 'id'
-    },
-    primaryKey: true // Composite primary key
+    primaryKey: true,
+    references: { model: 'subjects', key: 'id' }
   }
 }, {
   tableName: 'user_subject_rel',
-  timestamps: true // Enables createdAt & updatedAt
+  timestamps: false,
+  underscored: true
 });
 
 module.exports = UserSubjectRel;
