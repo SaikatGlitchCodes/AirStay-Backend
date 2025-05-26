@@ -5,6 +5,7 @@ const Request = require('./Request');
 const UserSubjectRel = require('./UserSubjectRel');
 const RequestSubjectRel = require('./RequestSubjectRel');
 const Transaction = require('./Transaction');
+const sequelize = require('../config/db');
 
 // User Relationships
 User.belongsTo(Address, { foreignKey: 'address_id', as: 'address' });
@@ -36,4 +37,5 @@ module.exports = {
   UserSubjectRel,
   RequestSubjectRel,
   Transaction,
+  sequelize,
 };
