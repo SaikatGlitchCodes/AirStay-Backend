@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
-const Request = require('./Request'); // Import Request model for FK
+const Request = require('./Request');
 
 const Address = sequelize.define('Address', {
   id: {

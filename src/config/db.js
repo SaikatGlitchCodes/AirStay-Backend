@@ -9,16 +9,16 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
   dialect: "postgres",
   dialectOptions: {
     ssl: {
-      require: true, // Required for Neon
+      require: true,
       rejectUnauthorized: false,
     },
   },
-  logging: process.env.NODE_ENV === "development", // Enable logging in dev mode
+  logging: process.env.NODE_ENV === "development",
   pool: {
     max: 10,
-    min: 2, // Avoid cold starts
+    min: 2,
     acquire: 30000,
-    idle: 5000, // Lower idle time for faster recycling
+    idle: 5000,
   },
 });
 

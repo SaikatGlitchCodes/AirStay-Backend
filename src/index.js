@@ -3,24 +3,10 @@ const cors = require('cors');
 const app = express();
 const port = process.env.PORT || 4000;
 
-const passport = require('passport');
-
 app.use(cors())
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.get('/', (_, res) => res.json({ message: 'pong' }));
-
-app.use(passport.initialize());
-app.use(passport.session());
-
-// Serialize and deserialize user
-passport.serializeUser((user, done) => {
-    done(null, user);
-});
-
-passport.deserializeUser((user, done) => {
-    done(null, user);
-});
 
 // Import routes
 const userRoutes = require('./routes/RequestRoute/userRoutes');
