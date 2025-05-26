@@ -8,15 +8,6 @@ const Address = sequelize.define('Address', {
     autoIncrement: true,
     primaryKey: true
   },
-  request_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: Request, // Foreign key reference
-      key: 'id'
-    },
-    onDelete: 'CASCADE'
-  },
   address_line_1: {
     type: DataTypes.TEXT,
     allowNull: true

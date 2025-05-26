@@ -21,8 +21,8 @@ router.post('/', async (req, res) => {
     upload_file,
     i_need_someone,
     phone_number,
-    address, // Address details
-    subjects // Array of subject IDs
+    address,
+    subjects
   } = req.body;
 
   try {
