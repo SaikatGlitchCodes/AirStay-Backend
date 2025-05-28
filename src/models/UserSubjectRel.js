@@ -2,11 +2,11 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
 const UserSubjectRel = sequelize.define('UserSubjectRel', {
-  user_id: {
-    type: DataTypes.INTEGER,
+  user_email: {
+    type: DataTypes.STRING,
     allowNull: false,
     primaryKey: true,
-    references: { model: 'users', key: 'id' }
+    references: { model: 'users', key: 'email' }
   },
   subject_id: {
     type: DataTypes.INTEGER,
