@@ -1,112 +1,113 @@
--- Drop the database if it exists and create a new one
-DROP DATABASE IF EXISTS mentoring_mainlyrise;
-CREATE DATABASE mentoring_mainlyrise;
-USE mentoring_mainlyrise;
+-- Drop in reverse order of dependencies
+DROP TABLE IF EXISTS transactions CASCADE;
+DROP TABLE IF EXISTS request_subject_rel CASCADE;
+DROP TABLE IF EXISTS user_subject_rel CASCADE;
+DROP TABLE IF EXISTS requests CASCADE;
+DROP TABLE IF EXISTS subjects CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS addresses CASCADE;
 
--- Create address table
-CREATE TABLE IF NOT EXISTS address (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    request_id INT,
+-- 1. Addresses Table
+CREATE TABLE addresses (
+    id SERIAL PRIMARY KEY,
     address_line_1 TEXT,
     address_line_2 TEXT,
-    lat DECIMAL(10, 8),
-    lon DECIMAL(11, 8),
-    offset_std VARCHAR(50),
-    abbreviation_std VARCHAR(50),
-    zip VARCHAR(20),
-    country VARCHAR(100),
-    country_code CHAR(2),
-    state VARCHAR(100),
-    state_code CHAR(2),
-    city VARCHAR(100),
-    street VARCHAR(255),
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    lat NUMERIC(10, 8),
+    lon NUMERIC(11, 8),
+    offset_std VARCHAR,
+    abbreviation_std VARCHAR,
+    zip VARCHAR,
+    country VARCHAR NOT NULL,
+    country_code VARCHAR(2) NOT NULL,
+    state VARCHAR,
+    state_code VARCHAR(2),
+    city VARCHAR,
+    street VARCHAR,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create subject table
-CREATE TABLE IF NOT EXISTS subject (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    description TEXT,
-    logo VARCHAR(255),
-    slug VARCHAR(255) UNIQUE NOT NULL,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
--- Create user table
-CREATE TABLE IF NOT EXISTS user (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id VARCHAR(50) UNIQUE NOT NULL,
-    name VARCHAR(255) NOT NULL,
-    role ENUM('student', 'tutor', 'admin') NOT NULL,
-    phone_number VARCHAR(20),
-    gender VARCHAR(20),
-    address_str TEXT,
-    email VARCHAR(255) UNIQUE NOT NULL,
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    address_id INT,
-    bio LONGTEXT,
-    years_of_experience DATE,
+-- 2. Users Table
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR NOT NULL,
+    role VARCHAR NOT NULL CHECK (role IN ('student', 'tutor', 'admin', 'user')),
+    phone_number VARCHAR,
+    gender VARCHAR,
+    email VARCHAR UNIQUE NOT NULL,
+    address_id INTEGER REFERENCES addresses(id) ON DELETE SET NULL,
+    bio TEXT,
+    years_of_experience FLOAT,
     rating DECIMAL(3, 2),
-    profile_img VARCHAR(255),
+    profile_img VARCHAR,
     hobbies TEXT,
-    subject_id INT,
-    coin_balance INT DEFAULT 0,
-    status ENUM('active', 'inactive', 'ban') DEFAULT 'active',
-    FOREIGN KEY (address_id) REFERENCES address(id),
-    FOREIGN KEY (subject_id) REFERENCES subject(id)
+    coin_balance INTEGER DEFAULT 0,
+    status VARCHAR DEFAULT 'active' CHECK (status IN ('active', 'inactive', 'ban')),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create request table
-CREATE TABLE IF NOT EXISTS request (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    student_id VARCHAR(50),
-    type ENUM('tutoring', 'job support', 'assignment') NOT NULL,
-    status ENUM('active', 'inactive') DEFAULT 'active',
-    level VARCHAR(50),
-    tutors_want INT,
-    gender_preference VARCHAR(20),
+-- 3. Subjects Table
+CREATE TABLE subjects (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR NOT NULL,
     description TEXT,
-    nature VARCHAR(255),
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    subject_id INT,
-    address_id INT,
-    FOREIGN KEY (student_id) REFERENCES user(user_id) ON DELETE SET NULL ON UPDATE CASCADE,
-    FOREIGN KEY (subject_id) REFERENCES subject(id) ON DELETE SET NULL ON UPDATE CASCADE,
-    FOREIGN KEY (address_id) REFERENCES address(id) ON DELETE SET NULL ON UPDATE CASCADE
+    logo VARCHAR,
+    slug VARCHAR UNIQUE,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create request_subject_rel table
-CREATE TABLE IF NOT EXISTS request_subject_rel (
-    request_id INT,
-    subject_id INT,
-    PRIMARY KEY (request_id, subject_id),
-    FOREIGN KEY (request_id) REFERENCES request(id),
-    FOREIGN KEY (subject_id) REFERENCES subject(id)
+-- 4. User-Subject Join Table
+CREATE TABLE user_subject_rel (
+    user_email VARCHAR NOT NULL REFERENCES users(email) ON DELETE CASCADE,
+    subject_id INTEGER NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+    PRIMARY KEY (user_email, subject_id)
 );
 
--- Create user_subject_rel table
-CREATE TABLE IF NOT EXISTS user_subject_rel (
-    user_id INT,
-    subject_id INT,
-    PRIMARY KEY (user_id, subject_id),
-    FOREIGN KEY (user_id) REFERENCES user(id),
-    FOREIGN KEY (subject_id) REFERENCES subject(id)
+-- 5. Requests Table
+CREATE TABLE requests (
+    id SERIAL PRIMARY KEY,
+    user_email VARCHAR NOT NULL REFERENCES users(email) ON DELETE SET NULL,
+    phone_number VARCHAR NOT NULL,
+    type VARCHAR NOT NULL CHECK (type IN ('tutoring', 'job support', 'assignment')),
+    status VARCHAR DEFAULT 'active' CHECK (status IN ('active', 'inactive')),
+    level VARCHAR,
+    tutors_want VARCHAR,
+    gender_preference VARCHAR,
+    description TEXT,
+    nature VARCHAR,
+    online_meeting BOOLEAN DEFAULT FALSE,
+    offline_meeting BOOLEAN DEFAULT FALSE,
+    travel_meeting BOOLEAN DEFAULT FALSE,
+    get_tutors_from VARCHAR,
+    price_amount DECIMAL(10, 2),
+    price_currency_symbol VARCHAR(5),
+    price_currency VARCHAR(3),
+    price_option VARCHAR,
+    upload_file VARCHAR,
+    i_need_someone TEXT,
+    language JSONB,
+    address_id INTEGER REFERENCES addresses(id) ON DELETE SET NULL,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- Create transaction table
-CREATE TABLE IF NOT EXISTS transaction (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT,
-    request_id INT,
-    transaction_type ENUM('spend', 'earn') NOT NULL,
-    amount INT NOT NULL, -- Amount of coins spent or earned
-    payment_method VARCHAR(100), -- Optional: method used for payment (e.g., credit_card, paypal)
-    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES user(id),
-    FOREIGN KEY (request_id) REFERENCES request(id)
+-- 6. Request-Subject Join Table
+CREATE TABLE request_subject_rel (
+    request_id INTEGER NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
+    subject_id INTEGER NOT NULL REFERENCES subjects(id) ON DELETE CASCADE,
+    PRIMARY KEY (request_id, subject_id)
+);
+
+-- 7. Transactions Table
+CREATE TABLE transactions (
+    id SERIAL PRIMARY KEY,
+    user_email VARCHAR NOT NULL REFERENCES users(email) ON DELETE CASCADE,
+    request_id INTEGER NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
+    transaction_type VARCHAR NOT NULL CHECK (transaction_type IN ('spend', 'earn')),
+    amount INTEGER NOT NULL,
+    payment_method VARCHAR(100),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );

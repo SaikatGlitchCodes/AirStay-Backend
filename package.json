@@ -4,8 +4,8 @@
   "description": "learning how to write node js code",
   "main": "main.js",
   "scripts": {
-    "start": "node src",
-    "dev": "nodemon src",
+    "start": "node server",
+    "dev": "nodemon server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
@@ -31,7 +31,13 @@
     "pg": "^8.13.3",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.3",
-    "sequelize-cli": "^6.6.2",
     "speakeasy": "^2.0.0"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3",
+    "jest": "^29.7.0",
+    "sequelize-cli": "^6.6.3",
+    "sqlite3": "^5.1.7",
+    "supertest": "^7.1.1"
   }
 }

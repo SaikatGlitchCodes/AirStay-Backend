@@ -2,9 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { Request, Address, Subject, User, Transaction, sequelize } = require('../../models');
 
+// POST /requests - Create new request
 router.post('/', async (req, res) => {
   const {
-    email,
+    user_email,
+    phone_number,
     type,
     status,
     level,
@@ -20,57 +22,60 @@ router.post('/', async (req, res) => {
     price_option,
     upload_file,
     i_need_someone,
-    phone_number,
     address,
-    subjects
+    subject = [],
+    language
   } = req.body;
 
   try {
-    // Create or find the address
-    let addressRecord;
-    if (address) {
-      addressRecord = await Address.create(address); // Adjust for your specific address structure
-    }
+    const [online, offline, travel] = [
+      meeting_options?.Online?.state || false,
+      meeting_options?.Offline?.state || false,
+      meeting_options?.Travel?.state || false
+    ];
 
-    // Create the request
+    const addressRecord = address ? await Address.create(address) : null;
+
     const request = await Request.create({
-      email,
-      type,
+      user_email,
+      phone_number,
+      type: type?.toLowerCase(),
       status,
       level,
       tutors_want,
       gender_preference,
       description,
       nature,
-      meeting_options,
+      online_meeting: online,
+      offline_meeting: offline,
+      travel_meeting: travel,
       get_tutors_from,
       price_amount,
       price_currency_symbol,
       price_currency,
       price_option,
       upload_file,
-      phone_number,
       i_need_someone,
-      address_id: addressRecord ? addressRecord.id : null
+      language,
+      address_id: addressRecord?.id || null
     });
 
-    // Associate subjects with the request
-    if (subjects && subjects.length) {
-      await request.setSubjects(subjects);
-    }
+    if (subject.length) await request.setSubjects(subject);
 
-    res.status(201).json(request);
+    return res.status(201).json(request);
   } catch (error) {
     console.error('Error creating request:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
-}); 
-router.get('/', async (req, res) => {
+});
+
+// GET all requests
+router.get('/', async (_, res) => {
   try {
     const requests = await Request.findAll({
       include: [
-        { model: Subject, as: 'subjects' }, // Include associated subjects
-        { model: Address, as: 'address' }   // Include associated address
+        { model: Subject, as: 'subjects' },
+        { model: Address, as: 'address' }
       ]
     });
     res.status(200).json(requests);
@@ -79,20 +84,20 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-router.get('/:email', async (req, res) => {
-  const { email } = req.params;
 
+// GET requests by user email
+router.get('/:email', async (req, res) => {
   try {
     const requests = await Request.findAll({
-      where: { email },
+      where: { user_email: req.params.email },
       include: [
-        { model: Subject, as: 'subjects' }, // Include associated subjects
-        { model: Address, as: 'address' }   // Include associated address
+        { model: Subject, as: 'subjects' },
+        { model: Address, as: 'address' }
       ]
     });
 
-    if (!requests || requests.length === 0) {
-      return res.status(200).json({ error: 'No requests found for this email' });
+    if (!requests.length) {
+      return res.status(200).json({ message: 'No requests found for this email', requests: [] });
     }
 
     res.status(200).json(requests);
@@ -101,8 +106,9 @@ router.get('/:email', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// PUT /requests/:id - Update request
 router.put('/:id', async (req, res) => {
-  const requestId = req.params.id;
   const {
     type,
     status,
@@ -119,74 +125,60 @@ router.put('/:id', async (req, res) => {
     upload_file,
     i_need_someone,
     address,
-    subjects
+    subjects = [],
+    language
   } = req.body;
 
   try {
-    // Find the request by ID
     const request = await Request.findOne({
-      where: { id: requestId },
-      include: [{ model: Address, as: 'address' }, { model: Subject, as: 'subjects' }]
+      where: { id: req.params.id },
+      include: [
+        { model: Address, as: 'address' },
+        { model: Subject, as: 'subjects' }
+      ]
     });
 
-    if (!request) {
-      return res.status(404).json({ error: 'Request not found' });
-    }
+    if (!request) return res.status(404).json({ error: 'Request not found' });
 
-    // Update the request fields
-    const updateFields = {};
-    if (type !== undefined) updateFields.type = type;
-    if (status !== undefined) updateFields.status = status;
-    if (level !== undefined) updateFields.level = level;
-    if (tutors_want !== undefined) updateFields.tutors_want = tutors_want;
-    if (gender_preference !== undefined) updateFields.gender_preference = gender_preference;
-    if (description !== undefined) updateFields.description = description;
-    if (nature !== undefined) updateFields.nature = nature;
-    if (meeting_options !== undefined) updateFields.meeting_options = meeting_options;
-    if (price_amount !== undefined) updateFields.price_amount = price_amount;
-    if (price_currency_symbol !== undefined) updateFields.price_currency_symbol = price_currency_symbol;
-    if (price_currency !== undefined) updateFields.price_currency = price_currency;
-    if (price_option !== undefined) updateFields.price_option = price_option;
-    if (upload_file !== undefined) updateFields.upload_file = upload_file;
-    if (i_need_someone !== undefined) updateFields.i_need_someone = i_need_someone;
+    const updateFields = {
+      type: type?.toLowerCase(),
+      status,
+      level,
+      tutors_want,
+      gender_preference,
+      description,
+      nature,
+      online_meeting: meeting_options?.Online?.state || false,
+      offline_meeting: meeting_options?.Offline?.state || false,
+      travel_meeting: meeting_options?.Travel?.state || false,
+      price_amount,
+      price_currency_symbol,
+      price_currency,
+      price_option,
+      upload_file,
+      i_need_someone,
+      language
+    };
 
     await request.update(updateFields);
 
-    // Update the address if provided
     if (address) {
       if (request.address_id) {
-        // Update the existing address
         const existingAddress = await Address.findByPk(request.address_id);
-        if (existingAddress) {
-          await existingAddress.update(address);
-        }
+        if (existingAddress) await existingAddress.update(address);
       } else {
-        // Create a new address if it didn't exist
         const newAddress = await Address.create(address);
         request.address_id = newAddress.id;
         await request.save();
       }
     }
 
-    // Update subjects if provided
-    if (subjects && subjects.length > 0) {
-      const currentSubjectIds = request.subjects.map(subject => subject.id);
-
-      // Find subjects to add
-      const subjectsToAdd = subjects.filter(id => !currentSubjectIds.includes(id));
-
-      // Find subjects to remove
-      const subjectsToRemove = currentSubjectIds.filter(id => !subjects.includes(id));
-
-      // Remove old subjects
-      if (subjectsToRemove.length > 0) {
-        await request.removeSubjects(subjectsToRemove);
-      }
-
-      // Add new subjects
-      if (subjectsToAdd.length > 0) {
-        await request.addSubjects(subjectsToAdd);
-      }
+    if (subjects.length) {
+      const currentSubjectIds = request.subjects.map(s => s.id);
+      const toAdd = subjects.filter(id => !currentSubjectIds.includes(id));
+      const toRemove = currentSubjectIds.filter(id => !subjects.includes(id));
+      if (toRemove.length) await request.removeSubjects(toRemove);
+      if (toAdd.length) await request.addSubjects(toAdd);
     }
 
     res.status(200).json(request);
@@ -195,48 +187,38 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+// GET /requests/get/:id - Get request details with user and transaction
 router.get('/get/:id', async (req, res) => {
   try {
-      const requestId = req.params.id;
+    const request = await Request.findOne({
+      where: { id: req.params.id },
+      include: [
+        { model: User, attributes: ['email', 'name'] },
+        { model: Address, as: 'address' },
+        {
+          model: Transaction,
+          where: { transaction_type: 'spend' },
+          attributes: [[sequelize.fn('COUNT', sequelize.col('Transactions.user_email')), 'userCount']],
+          required: false
+        }
+      ],
+      group: ['Request.id', 'User.id', 'address.id']
+    });
 
-      const request = await Request.findOne({
-          where: { id: requestId },
-          include: [
-              {
-                  model: User,
-                  attributes: ['email', 'name'], // Adjust fields as necessary
-              },
-              {
-                  model: Address,
-                  as: 'address', // Use the alias defined in the association
-              },
-              {
-                  model: Transaction,
-                  where: { transaction_type: 'spend' },
-                  attributes: [[sequelize.fn('COUNT', sequelize.col('Transactions.user_id')), 'userCount']],
-                  required: false
-              }
-          ],
-          group: ['Request.id', 'User.id', 'address.id'] // Group by necessary fields
-      });
+    if (!request) return res.status(404).json({ message: 'Request not found' });
 
-      if (!request) {
-          return res.status(404).json({ message: 'Request not found' });
-      }
+    const userCount = request.Transactions?.[0]?.dataValues?.userCount || 0;
 
-      // Include user count in the response
-      const userCount = request.Transactions.length > 0 ? request.Transactions[0].dataValues.userCount : 0;
-
-      res.status(200).json({
-          ...request.dataValues,
-          userCount,
-          address: request.address // Include address details
-      });
+    res.status(200).json({
+      ...request.dataValues,
+      userCount,
+      address: request.address
+    });
   } catch (error) {
-      console.error('Error fetching request:', error);
-      res.status(500).json({ error: 'Internal server error' });
+    console.error('Error fetching request details:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
-
 
 module.exports = router;
