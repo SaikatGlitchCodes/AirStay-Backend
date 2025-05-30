@@ -5,7 +5,6 @@ const { sequelize, Subject, User, Transaction, Request } = require('../models');
 let studentEmail = 'student@example.com';
 let tutorEmail = 'tutor@example.com';
 let requestId;
-let tutorId;
 
 beforeAll(async () => {
   await sequelize.sync({ force: true });
